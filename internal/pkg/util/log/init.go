@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"time"
 )
 
 /*
@@ -23,7 +24,7 @@ func Init(filePath string) {
 	env := os.Getenv("GO_ENV")
 	setLevel(env)
 	setFormatter(env)
-	setOutput(filePath)
+	//setOutput(filePath)
 	log.SetReportCaller(true)
 	log.Info("Log Init Success")
 }
@@ -36,18 +37,19 @@ func setOutput(filePath string) {
 		MaxBackups: 3,  // 保留最近 3 個日誌文件
 		MaxAge:     7,  // 保留 7 天
 		Compress:   true,
+		LocalTime:  true,
 	}
 	// 設置文件權限為 0644
 	go func() {
-		for {
-			_, err := os.Stat(filePath)
-			if err == nil {
-				err = os.Chmod(filePath, 0644)
-				if err != nil {
-					log.Fatalf("Failed to change log file permissions: %v", err)
-				}
+		time.Sleep(1 * time.Second)
+		_, err := os.Stat(filePath)
+		if err == nil {
+			err = os.Chmod(filePath, 0644)
+			if err != nil {
+				log.Fatalf("Failed to change log file permissions: %v", err)
 			}
 		}
+
 	}()
 	log.SetOutput(io.MultiWriter(writer1, writer2))
 
