@@ -8,13 +8,20 @@ import (
 	"gamePractice/internal/pkg/util/file"
 	log "github.com/sirupsen/logrus"
 	"strconv"
+	"strings"
 )
 
 type Doc struct {
+	BasePath string
+}
+
+func (d *Doc) getPath(fileName string) string {
+	return d.BasePath + "/internal/services/cmd/slotGame/lineGamePractice/settings/file/" + fileName
 }
 
 func (d *Doc) ReadWheelTable() (bool, *reel.Table, *reel.Table) {
-	records, ok := d.readCsv("./internal/services/cmd/slotGame/lineGamePractice/settings/file/CFZS.csv")
+	records, ok := d.readCsv(d.getPath("CFZS.csv"))
+	//records, ok := d.readCsv(d.getPath("Fake.csv"))
 	if !ok {
 		return false, &reel.Table{}, &reel.Table{}
 	}
@@ -26,30 +33,32 @@ func (d *Doc) ReadWheelTable() (bool, *reel.Table, *reel.Table) {
 	//log.Info("fgReelRecords: ", fgReelRecords)
 	mgTable := d.toReel(game.Main, mgReelRecords)
 	fgTable := d.toReel(game.Free, fgReelRecords)
-	log.Info("MgReel: ", mgTable)
-	log.Info("長度: ", len(mgTable.Reels[0].Items)) //長度103
-	log.Info("FgReel: ", fgTable)
+
+	//log.Info("長度: ", len(mgTable.Reels[4].Items)) //長度103
+	//log.Info("MgReel: ", mgTable)
+	//log.Info("FgReel: ", fgTable)
 	return true, mgTable, fgTable
 }
 
 func (d *Doc) ReadPayTable() (bool, *payout.Table) {
-	records, ok := d.readCsv("./internal/services/cmd/slotGame/lineGamePractice/settings/file/table.csv")
+	records, ok := d.readCsv(d.getPath("table.csv"))
 	if !ok {
 		return false, &payout.Table{}
 	}
 	table := d.toPayOut(records)
-	log.Info("PayTable: ", table)
+	//log.Info("PayTable: ", table)
 	return true, table
 }
 
 func (d *Doc) ReadLineTable() (bool, *line.Table) {
-	records, ok := d.readCsv("./internal/services/cmd/slotGame/lineGamePractice/settings/file/lines.csv")
+	records, ok := d.readCsv(d.getPath("lines.csv"))
 	if !ok {
 		return false, &line.Table{}
 	}
 	//log.Info("原始 Table: ", records)
 	table := d.toLine(records)
-	log.Info("LineTable: ", *table)
+	//log.Info("LineTable: ", *table)
+	//log.Info("LineTable: ", len(table.Rows))
 	return true, table
 }
 
@@ -58,7 +67,6 @@ func (d *Doc) toLine(records [][]string) *line.Table {
 	for i := 1; i < len(records); i++ { // 跳過第一行表頭
 		rowData := records[i]
 		indexes := d.getLineIndexes(rowData)
-		//num, _ := strconv.Atoi(rowData[0])
 		lines = append(lines, &line.Row{Case: indexes})
 	}
 	return &line.Table{Name: "LineTable", Rows: lines}
@@ -87,7 +95,7 @@ func (d *Doc) toPayOut(records [][]string) *payout.Table {
 		p5, _ := strconv.ParseFloat(row[5], 64)
 
 		payouts = append(payouts, &payout.Row{
-			Symbol: row[0],
+			Symbol: strings.TrimSpace(row[0]),
 			Pays:   []float64{p1, p2, p3, p4, p5},
 		})
 	}
@@ -96,9 +104,15 @@ func (d *Doc) toPayOut(records [][]string) *payout.Table {
 
 func (d *Doc) toReel(name string, records [][]string) *reel.Table {
 	var reels []*reel.Reel
+
 	for _, row := range records {
+		var newRecords []string
+		for _, item := range row {
+			newRecords = append(newRecords, strings.TrimSpace(item))
+		}
+		//log.Info("row: ", row)
 		reels = append(reels, &reel.Reel{
-			Items: row,
+			Items: newRecords,
 		})
 	}
 	return &reel.Table{Name: name, Reels: reels}

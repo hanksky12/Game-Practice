@@ -7,6 +7,7 @@ import (
 	"gamePractice/internal/services/cmd/slotGame/lineGamePractice/game/common/session"
 	"gamePractice/internal/services/cmd/slotGame/lineGamePractice/game/common/user"
 	log "github.com/sirupsen/logrus"
+	"sync"
 )
 
 type LineGamePractice struct {
@@ -14,22 +15,32 @@ type LineGamePractice struct {
 	FgSettingsTables *settings.Tables
 }
 
-func (l *LineGamePractice) Spin(user *user.User, singleBet float64, shape []int) {
+func (l *LineGamePractice) Spin(user *user.User, singleBet float64, shape []int, mu *sync.Mutex, wg *sync.WaitGroup) {
 	log.Info("LineGamePractice spin")
-	s := &session.Session{MaxFreeGameTimes: 30}
+	defer wg.Done()
+	s := &session.Session{MaxFreeGameTimes: 250}
 	s.Init()
+	isPrintMore := false
 
 	m := game.Main{Shape: shape, Session: s, User: user}
-	m.Run(singleBet, l.MgSettingsTables)
-
+	m.Run(singleBet, l.MgSettingsTables, mu, isPrintMore)
+	//log.Info("MG玩家Win ", user.Win)
+	var wgf sync.WaitGroup
 	for {
 		IsAnyFree, whichNumTimes := s.IsAnyFreeGameTimes()
 		if !IsAnyFree {
 			break
 		}
 		log.Info("免費場次第", whichNumTimes, " 次")
-		free := game.Free{Shape: shape, Session: s, User: user}
-		free.Run(singleBet, l.FgSettingsTables)
+		wgf.Add(1)
+		go func(whichNumTimes int) {
+			defer wgf.Done()
+			f := game.Free{Shape: shape, Session: s, User: user}
+			f.Run(singleBet, l.FgSettingsTables, mu, isPrintMore)
+		}(whichNumTimes)
+		//free := game.Free{Shape: shape, Session: s, User: user}
+		//free.Run(singleBet, l.FgSettingsTables, mu, isPrintMore)
+		//log.Info("FG玩家Win ", user.Win)
 	}
 
 	log.Info("玩家總得分 ", user.Balance)

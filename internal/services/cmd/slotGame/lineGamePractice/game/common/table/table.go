@@ -19,37 +19,37 @@ type Base struct {
 }
 
 func (b *Base) FillGameBoard(table *reel.Table) {
-	log.Info("~~生成盤面~~")
+	//log.Info("~~生成盤面~~")
 	for index, reelLen := range b.Board.Shape {
 		sourceReel := table.Reels[index] // 取得輪帶
-		//log.Info("~~生成輪帶 ", sourceReel.Name)
+		//log.Info("~~取輪帶 ", sourceReel)
 		selectedSymbols := b.selectSymbols(sourceReel.Items, reelLen)
+		//log.Info("~~生成Reel ", selectedSymbols)
 		b.Board.Reels[index] = &reel.Reel{Items: selectedSymbols}
 	}
 	log.Info(b.Board)
-	log.Info("~~完成盤面~~")
+	//log.Info("~~完成盤面~~")
 }
 
 func (b *Base) CalculateWinScore(singleBet float64, payoutTable *payout.Table, lineTable *line.Table) float64 {
-	log.Info("~~盤面計分~~")
+	//log.Info("~~盤面計分~~")
 	var singleGameScore = 0.0
-	var minimumCount = 3
-	scoringLine := scoring.Line{LineTable: lineTable, PayoutTable: payoutTable}
-	scoringLine.Init()
-	for i, lineRow := range lineTable.Rows {
-		log.Info("~~~~第", i+1, "種~~~~")
+	var minimumCount = 2
+	scoringLine := scoring.Line{}
+	for _, lineRow := range lineTable.Rows {
+		//log.Info("~~~~第", i+1, "種~~~~")
 		count, matchingSymbol := scoringLine.GetCountAndSymbol(lineRow, b.Board.Reels)
 		if b.IsPrintMore {
 			items := scoringLine.GetReelItems(lineRow, b.Board.Reels)
 			log.Info(" Case:", lineRow.Case, " 對應值:", items)
 		}
 		if count < minimumCount {
-			log.Info("不足連線數")
+			//log.Info("不足連線數")
 			continue
 		}
 		// 計算得分
-		lineScore := scoringLine.QueryScore(count, matchingSymbol, singleBet)
-		log.Info(" 符號:", matchingSymbol, " 連線數:", count, " 線得分:", lineScore)
+		lineScore := scoringLine.QueryScore(count, matchingSymbol, singleBet, lineTable, payoutTable)
+		//log.Info(" 符號:", matchingSymbol, " 連線數:", count, " 線得分:", lineScore)
 		singleGameScore += lineScore
 	}
 	log.Info("~~單局計分~~ SingleGameScore ", singleGameScore)
@@ -57,7 +57,7 @@ func (b *Base) CalculateWinScore(singleBet float64, payoutTable *payout.Table, l
 }
 
 func (b *Base) CalculateWinFreeGame() (bool, int) {
-	count := count.Symbol(b.Board.Reels, symbol.Sc)
+	count := count.Symbol(b.Board.Reels, symbol.SC)
 	log.Info("Scatter count ", count)
 	if count >= 3 {
 		return true, 10
@@ -67,6 +67,7 @@ func (b *Base) CalculateWinFreeGame() (bool, int) {
 
 func (b *Base) selectSymbols(items []string, length int) []string {
 	if len(items) == 0 || length <= 0 {
+		log.Info("輪帶長度為0或選取長度為0")
 		return nil
 	}
 	startIndex := b.Rand.Intn(len(items)) // 隨機loc //startIndex := 101

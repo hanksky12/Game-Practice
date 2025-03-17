@@ -5,16 +5,10 @@ import (
 	"gamePractice/internal/pkg/entity/settings/line"
 	"gamePractice/internal/pkg/entity/settings/payout"
 	"gamePractice/internal/pkg/entity/settings/reel"
+	log "github.com/sirupsen/logrus"
 )
 
 type Line struct {
-	LineTable   *line.Table
-	PayoutTable *payout.Table
-	betBase     float64
-}
-
-func (line *Line) Init() {
-	line.betBase = float64(len(line.LineTable.Rows))
 }
 
 func (line *Line) GetCountAndSymbol(lineRow *line.Row, reels []*reel.Reel) (int, string) {
@@ -46,20 +40,23 @@ func (line *Line) GetCountAndSymbol(lineRow *line.Row, reels []*reel.Reel) (int,
 	return count, continuousSymbol
 }
 
-func (line *Line) QueryScore(count int, symbol string, singleBet float64) float64 {
-	for _, payoutRow := range line.PayoutTable.Rows {
+func (line *Line) QueryScore(count int, symbol string, singleBet float64, lineTable *line.Table, payoutTable *payout.Table) float64 {
+	betBase := float64(len(lineTable.Rows))
+	for _, payoutRow := range payoutTable.Rows {
 		if payoutRow.Symbol != symbol {
 			continue
 		}
 		//與賠付表的符號一樣，才計算
-		return singleBet * (payoutRow.Pays[count-1] / line.betBase)
+		return singleBet * (payoutRow.Pays[count-1] / betBase)
 	}
+	log.Info("No payout for symbol !!!!!!!!!", symbol)
+	panic("No payout for symbol !!!!!!!!!")
 	return 0
 }
 
-func (l *Line) GetReelItems(line *line.Row, reels []*reel.Reel) []string {
+func (l *Line) GetReelItems(lineRow *line.Row, reels []*reel.Reel) []string {
 	var items []string
-	for reelIndex, itemIndex := range line.Case {
+	for reelIndex, itemIndex := range lineRow.Case {
 		items = append(items, reels[reelIndex].Items[itemIndex])
 	}
 	return items

@@ -15,6 +15,6 @@ var (
 	L5 = "L5"
 	L6 = "L6"
 
-	Sc = "Sc"
+	SC = "SC"
 	W  = "W"
 )
