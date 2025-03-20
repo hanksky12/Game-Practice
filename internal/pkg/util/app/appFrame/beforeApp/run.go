@@ -6,5 +6,5 @@ import (
 )
 
 func Run(Options *options.Options) {
-	logCustom.Init(Options.LogOptions.FilePath)
+	logCustom.Init(Options.LogOptions.FilePath, Options.LogOptions.Level)
 }

@@ -16,6 +16,6 @@ type IReadLine interface {
 	ReadLineTable() (bool, *line.Table)
 }
 
-//type IReadWay interface {
-//	IReadBase
-//}
+type IReadWay interface {
+	IReadBase
+}

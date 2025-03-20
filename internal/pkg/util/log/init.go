@@ -1,12 +1,15 @@
 package log
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"os"
 	"path"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -20,9 +23,9 @@ ex:
 	}).Fatal("Failed to send event")
 */
 
-func Init(filePath string) {
-	env := os.Getenv("GO_ENV")
-	setLevel(env)
+func Init(filePath string, level string) {
+	env := "development" //development //large_test
+	setLevel(env, level)
 	setFormatter(env)
 	//setOutput(filePath)
 	log.SetReportCaller(true)
@@ -62,11 +65,35 @@ func setFormatter(env string) {
 		TimestampFormat: "2006-01-02 15:04:05",
 		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) { //自定义Caller的返回
 			fileName := path.Base(frame.File)
-			return frame.Function, fileName
+			gid := getGoroutineID()
+			return fmt.Sprintf("[%s] %s", gid, frame.Function), fileName
 		}})
 }
 
-func setLevel(env string) {
+func getGoroutineID() string {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
+	if id, err := strconv.Atoi(idField); err == nil {
+		return fmt.Sprintf("Goroutine-%d", id)
+	}
+	return "Goroutine-Unknown"
+}
+
+func setLevel(env, level string) {
+	if level != "" {
+		switch level {
+		case "debug":
+			log.SetLevel(log.DebugLevel)
+		case "info":
+			log.SetLevel(log.InfoLevel)
+		case "warn":
+			log.SetLevel(log.WarnLevel)
+		default:
+			log.SetLevel(log.InfoLevel) // 默認使用 info 級別
+		}
+		return
+	}
 	switch env {
 	case "development":
 		log.SetLevel(log.DebugLevel)

@@ -6,4 +6,5 @@ type Options struct {
 
 type LogOptions struct {
 	FilePath string
+	Level    string
 }

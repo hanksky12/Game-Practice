@@ -11,12 +11,14 @@ func main() {
 	options := &options.Options{
 		LogOptions: &options.LogOptions{
 			FilePath: "log/cmd.log",
+			Level:    "warn", //warn
 		},
 	}
 	appFrame.Run(options, func() { cmd.Execute(&controller.Job{}) })
 	/*
-		在主目錄下。 (不要直接build cmd.go =>no use)
-		go run ./cmd/cmd/cmd.go -c LineGamePractice -p false         (讀取文件)
-		go run ./cmd/cmd/cmd.go -c LineGamePractice -p true          (讀取mock)
+		主目錄下 (不要直接build cmd.go =>no use)
+		go run ./cmd/cmd/cmd.go -c Practice1
+		go run ./cmd/cmd/cmd.go -c Practice2
+		go run ./cmd/cmd/cmd.go -c Practice3  .....
 	*/
 }

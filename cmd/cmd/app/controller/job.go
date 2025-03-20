@@ -1,61 +1,108 @@
 package controller
 
 import (
-	"fmt"
-	"gamePractice/internal/pkg/interface"
-	"gamePractice/internal/services/cmd/slotGame/lineGamePractice"
-	"gamePractice/internal/services/cmd/slotGame/lineGamePractice/game/common/user"
-	"gamePractice/internal/services/cmd/slotGame/lineGamePractice/settings"
+	"gamePractice/internal/pkg/entity/game/param"
+	randUtil "gamePractice/internal/pkg/util/rand"
+	"gamePractice/internal/services/cmd/slotGame/common/game"
+	"gamePractice/internal/services/cmd/slotGame/common/user"
+	"gamePractice/internal/services/cmd/slotGame/practice_1"
+	"gamePractice/internal/services/cmd/slotGame/practice_2"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"sync"
+	"math/rand"
+	"time"
 )
 
 type Job struct{}
 
-func (j *Job) LineGamePractice(isMock string) {
-	/*
-		Shape 3*5
-		Sc*3 Up(不管連續) => +free 10
-		Symbol*2 Up => payout
-		max free =250
-		W 百搭(L,H,not Sc)
-		1百萬次=>1min(47s)
-	*/
-	log.Info("LineGamePractice: start")
-	//totalTimes := 1000000
-	totalTimes := 1000000
+// Practice1
+/*
+	lineGameBasic
+	Shape 3*5
+	Sc*3 Up(不管連續) => MG,FG+free 10
+	Symbol*2 Up => payout
+	max free =250
+	W 百搭(L,H,not Sc)
+	1百萬次=>RTP 97.287%
+*/
+func (j *Job) Practice1() {
+	log.Info("Practice1: start")
 	singleUser := &user.User{
 		Id:      1,
 		Balance: 0.0,
 		Win:     0.0,
 	}
-	singleBet := 10.0
-	shape := []int{3, 3, 3, 3, 3}
-	log.Info("初始金額 ", singleUser.Balance, " 下注 ", singleBet)
-	var settingDoc _interface.IReadLine
-	if isMock == "true" {
-		settingDoc = &settings.MockDoc{} //自訂 高機率觸發FreeGame
-	} else {
-		basePath, _ := os.Getwd()
-		settingDoc = &settings.Doc{BasePath: basePath}
+	gameParam := &param.Parameter{
+		SingleBet:        10.0,
+		MaxFreeGameTimes: 250,
+		Rand:             &randUtil.SafeRand{Rand: rand.New(rand.NewSource(time.Now().UnixNano()))},
+		BoardShape: &param.BoardShape{
+			Mg: []int{3, 3, 3, 3, 3},
+			Fg: []int{3, 3, 3, 3, 3},
+		},
+		FreeAddTimes: &param.FreeAddTimes{
+			Mg: [5]int{0, 0, 10, 10, 10},
+			Fg: [5]int{0, 0, 10, 10, 10},
+		},
+		PayOutMinimumCount: &param.PayOutMinimumCount{
+			Mg: 2,
+			Fg: 2,
+		},
 	}
-	lineGame := &lineGamePractice.LineGamePractice{}
-	if !lineGame.Init(settingDoc) {
-		log.Info("讀取資料失敗")
+	practiceGame := &practice_1.LineGamePractice{GameParam: gameParam, User: singleUser}
+	if !practiceGame.Init(false) {
+		log.Error("讀取資料失敗")
 		return
 	}
-	var wg sync.WaitGroup
-	var mu sync.Mutex
-	for i := 0; i < totalTimes; i++ {
-		//log.Info("第", i+1, "次~~~")
-		wg.Add(1)
-		go lineGame.Spin(singleUser, singleBet, shape, &mu, &wg)
+	game.SpinByTimes(practiceGame, gameParam, singleUser, 1000000) //1000000
+}
+
+// Practice2
+/*
+	WayGameBasic
+	Shape 3*5
+	Sc*3 Up(不管連續) => MG,FG +free 10, 15, 20
+	Symbol*3 Up => payout
+	max free =60
+	W 百搭(L,H,not Sc)
+	1百萬次=>RTP 50.88%
+*/
+func (j *Job) Practice2() {
+	log.Info("Practice2: start")
+	singleUser := &user.User{
+		Id:      1,
+		Balance: 0.0,
+		Win:     0.0,
 	}
-	wg.Wait()
-	Win := singleUser.Win
-	Bet := singleBet * float64(totalTimes)
-	RTP := Win / Bet
-	percentageRTP := fmt.Sprintf("%.3f%%", RTP*100)
-	log.Info("Win ", Win, " Bet ", Bet, " RTP ", percentageRTP)
+	gameParam := &param.Parameter{
+		SingleBet:        50.0,
+		MaxFreeGameTimes: 60,
+		Rand:             &randUtil.SafeRand{Rand: rand.New(rand.NewSource(time.Now().UnixNano()))},
+		BoardShape: &param.BoardShape{
+			Mg: []int{3, 3, 3, 3, 3},
+			Fg: []int{3, 3, 3, 3, 3},
+		},
+		FreeAddTimes: &param.FreeAddTimes{
+			Mg: [5]int{0, 0, 10, 15, 20},
+			Fg: [5]int{0, 0, 10, 15, 20},
+		},
+		PayOutMinimumCount: &param.PayOutMinimumCount{
+			Mg: 3,
+			Fg: 3,
+		},
+	}
+	practiceGame := &practice_2.WayGamePractice{GameParam: gameParam, User: singleUser}
+	if !practiceGame.Init(false) {
+		log.Error("讀取資料失敗")
+		return
+	}
+	game.SpinByTimes(practiceGame, gameParam, singleUser, 1000000) //1000000
+}
+
+// Practice3
+/*
+
+ */
+func (j *Job) Practice3() {
+	log.Info("Practice3: start")
+
 }

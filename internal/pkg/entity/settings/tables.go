@@ -6,8 +6,13 @@ import (
 	"gamePractice/internal/pkg/entity/settings/reel"
 )
 
-type Tables struct {
+type LineTables struct {
 	Wheel *reel.Table
 	Pay   *payout.Table
 	Line  *line.Table
+}
+
+type WayTables struct {
+	Wheel *reel.Table
+	Pay   *payout.Table
 }
